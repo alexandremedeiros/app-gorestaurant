@@ -74,6 +74,21 @@ const FoodDetails: React.FC = () => {
   useEffect(() => {
     async function loadFood(): Promise<void> {
       // Load a specific food with extras based on routeParams id
+      const response = await api.get(`/foods/${routeParams.id}`);
+
+      const foodData = {
+        ...response.data,
+        formattedPrice: formatValue(response.data.price),
+      } as Food;
+
+      const arrExtras = response.data.extras as Extra[];
+
+      arrExtras.forEach(extra => {
+        extra.quantity = 0;
+      });
+
+      setFood(foodData);
+      setExtras(arrExtras);
     }
 
     loadFood();
@@ -101,6 +116,12 @@ const FoodDetails: React.FC = () => {
 
   const cartTotal = useMemo(() => {
     // Calculate cartTotal
+    const extraTotalPrice = extras.reduce((increment, extra) => {
+      return increment + extra.quantity * extra.value;
+    }, 0);
+
+    const totalPrice = (extraTotalPrice + food.price) * foodQuantity;
+    return formatValue(totalPrice);
   }, [extras, food, foodQuantity]);
 
   async function handleFinishOrder(): Promise<void> {

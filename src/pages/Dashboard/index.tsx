@@ -75,21 +75,19 @@ const Dashboard: React.FC = () => {
     }
 
     loadFoods();
-  }, [selectedCategory, searchValue]);
+  }, [searchValue, selectedCategory]);
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      api.get('categories').then(response => {
-        setCategories(response.data);
-      });
+      const response = await api.get('/categories');
+      setCategories(response.data);
     }
 
     loadCategories();
-  }, []);
+  }, [selectedCategory, searchValue]);
 
   function handleSelectCategory(id: number): void {
-    // const category = categories.find(findCategory => findCategory.id === id);
-    setSelectedCategory(id);
+    setSelectedCategory(state => (state === id ? undefined : id));
   }
 
   return (
