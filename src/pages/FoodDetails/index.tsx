@@ -81,14 +81,15 @@ const FoodDetails: React.FC = () => {
         formattedPrice: formatValue(response.data.price),
       } as Food;
 
-      const arrExtras = response.data.extras as Extra[];
-
-      arrExtras.forEach(extra => {
-        extra.quantity = 0;
-      });
+      const extrasData = response.data.extras.map(
+        (extra: Omit<Extra, 'quantity'>) => ({
+          ...extra,
+          quantity: 0,
+        }),
+      );
 
       setFood(foodData);
-      setExtras(arrExtras);
+      setExtras(extrasData);
     }
 
     loadFood();
@@ -96,8 +97,8 @@ const FoodDetails: React.FC = () => {
 
   function handleIncrementExtra(id: number): void {
     // Increment extra quantity
-    setExtras(incExtra => {
-      return incExtra.map(extra => {
+    setExtras(state => {
+      return state.map(extra => {
         if (extra.id === id) {
           return {
             ...extra,
@@ -114,7 +115,7 @@ const FoodDetails: React.FC = () => {
     // Decrement extra quantity
     setExtras(incExtra => {
       return incExtra.map(extra => {
-        if (extra.id === id && extra.quantity > 0) {
+        if (extra.id === id && extra.quantity !== 0) {
           return {
             ...extra,
             quantity: extra.quantity - 1,
@@ -133,13 +134,17 @@ const FoodDetails: React.FC = () => {
 
   function handleDecrementFood(): void {
     // Decrement food quantity
-    if (foodQuantity > 0) {
-      setFoodQuantity(state => state - 1);
-    }
+    setFoodQuantity(state => (state === 1 ? 1 : state - 1));
   }
 
-  const toggleFavorite = useCallback(() => {
+  const toggleFavorite = useCallback(async () => {
     // Toggle if food is favorite or not
+    if (isFavorite) {
+      await api.delete(`/favorites/${food.id}`);
+    } else {
+      await api.post('/favorites', food);
+    }
+    setIsFavorite(state => !state);
   }, [isFavorite, food]);
 
   const cartTotal = useMemo(() => {
@@ -154,6 +159,16 @@ const FoodDetails: React.FC = () => {
 
   async function handleFinishOrder(): Promise<void> {
     // Finish the order and save on the API
+    const data = {
+      ...food,
+      ...extras,
+      product_id: food.id,
+    };
+
+    delete data.id;
+
+    await api.post('/orders', data);
+    navigation.navigate('DashboardStack');
   }
 
   // Calculate the correct icon name
